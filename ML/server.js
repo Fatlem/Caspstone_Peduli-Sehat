@@ -7,29 +7,29 @@ const path = require("path");
 const app = express();
 const port = 3000;
 
-// Get the absolute path to the virtual environment's Python
-const pythonPath = path.join(__dirname, "venv", "bin", "python3");
+// Dapatkan path absolut ke Python di lingkungan virtual
+const pythonPath = path.join(__dirname, "venv", "Scripts", "python.exe");
 
-// Enable CORS and JSON parsing
+// Aktifkan CORS dan parsing JSON
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the current directory
+// Sajikan file statis dari direktori saat ini
 app.use(express.static("."));
 
-// Get symptoms list
+// Dapatkan daftar gejala
 app.get("/symptoms", async (req, res) => {
   try {
-    console.log("Reading symptoms from selected_features.json");
-    const data = await fs.readFile("selected_features.json", "utf8");
+    console.log("Membaca gejala dari selected_gejala_v2.json");
+    const data = await fs.readFile("selected_gejala_v2.json", "utf8");
     const symptoms = JSON.parse(data);
-    console.log(`Found ${symptoms.length} symptoms`);
+    console.log(`Ditemukan ${symptoms.length} gejala`);
     res.json({
       success: true,
       symptoms: symptoms,
     });
   } catch (error) {
-    console.error("Error reading symptoms:", error);
+    console.error("Error membaca gejala:", error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -37,13 +37,13 @@ app.get("/symptoms", async (req, res) => {
   }
 });
 
-// Make prediction
+// Lakukan prediksi
 app.post("/predict", async (req, res) => {
   const symptoms = req.body.symptoms;
   if (!symptoms || !Array.isArray(symptoms)) {
     return res.status(400).json({
       success: false,
-      error: "Invalid symptoms data",
+      error: "Data gejala tidak valid",
     });
   }
 
@@ -59,38 +59,38 @@ app.post("/predict", async (req, res) => {
     });
 
     python.stderr.on("data", (data) => {
-      console.error(`Python Error: ${data}`);
+      console.error(`Error Python: ${data}`);
       errorString += data.toString();
     });
 
     python.on("close", (code) => {
       try {
-        // Only try to delete if file exists
+        // Hanya coba hapus jika file ada
         fs.access("temp_input.json")
           .then(() => fs.unlink("temp_input.json"))
-          .catch(() => {}); // Ignore if file doesn't exist
+          .catch(() => {}); // Abaikan jika file tidak ada
 
         if (code !== 0) {
-          console.error("Python process exited with code:", code);
-          console.error("Error output:", errorString);
+          console.error("Proses Python keluar dengan kode:", code);
+          console.error("Output error:", errorString);
           return res.status(500).json({
             success: false,
-            error: "Error running prediction script",
+            error: "Error menjalankan script prediksi",
           });
         }
 
         const result = JSON.parse(dataString);
         res.json(result);
       } catch (error) {
-        console.error("Error parsing result:", error);
+        console.error("Error memproses hasil:", error);
         res.status(500).json({
           success: false,
-          error: "Error processing prediction result",
+          error: "Error memproses hasil prediksi",
         });
       }
     });
   } catch (error) {
-    console.error("Server error:", error);
+    console.error("Error server:", error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -98,12 +98,12 @@ app.post("/predict", async (req, res) => {
   }
 });
 
-// Start server
+// Mulai server
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-  console.log("Using Python from:", pythonPath);
-  console.log("Make sure you have all required files:");
-  console.log("- randomforest_model.joblib");
-  console.log("- label_encoder.joblib");
-  console.log("- selected_features.json");
+  console.log(`Server berjalan di http://localhost:${port}`);
+  console.log("Menggunakan Python dari:", pythonPath);
+  console.log("Pastikan Anda memiliki semua file yang diperlukan:");
+  console.log("- train1_model_v2.joblib");
+  console.log("- label_train_v2.joblib");
+  console.log("- selected_gejala_v2.json");
 });

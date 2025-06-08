@@ -14,21 +14,37 @@ const History = lazy(() => import("./pages/History"));
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8081/is-logged-in")
-      .then((res) => {
+    const checkAuthStatus = async () => {
+      try {
+        const res = await axios.get("http://localhost:8081/is-logged-in", {
+          withCredentials: true
+        });
         if (res.data.Status === "Success") {
           setIsLoggedIn(true);
-          console.log("oiiiiii");
         } else {
           setIsLoggedIn(false);
-          console.log("oiiiiiiiissss");
         }
-      })
-      .then((err) => console.log(err));
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <Router>
