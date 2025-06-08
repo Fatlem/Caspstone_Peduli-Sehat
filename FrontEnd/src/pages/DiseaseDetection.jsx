@@ -62,7 +62,7 @@ const DiseaseDetection = ({ isLoggedIn }) => {
       {/* Content Section */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <DetectionForm />
+          <DetectionForm isLoggedIn={isLoggedIn} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
             <div className="bg-white rounded-lg p-6 shadow-md">

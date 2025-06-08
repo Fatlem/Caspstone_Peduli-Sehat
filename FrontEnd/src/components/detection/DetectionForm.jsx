@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import Select from "react-select";
+import axios from "axios";
 
 const SymptomTag = ({ text, onRemove }) => {
   return (
@@ -65,7 +66,7 @@ const ResultSection = ({ result, onClose }) => {
   );
 };
 
-const DetectionForm = () => {
+const DetectionForm = ({ isLoggedIn }) => {
   const [availableSymptoms, setAvailableSymptoms] = useState([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [showResult, setShowResult] = useState(false);
@@ -97,6 +98,26 @@ const DetectionForm = () => {
       });
   }, []);
 
+  const saveToHistory = async (symptoms, prediction) => {
+    if (!isLoggedIn) return;
+
+    try {
+      // Convert symptoms array to object with boolean values
+      const symptomsObject = symptoms.reduce((acc, symptom) => {
+        acc[symptom] = true;
+        return acc;
+      }, {});
+
+      await axios.post("http://localhost:8081/save-detection", {
+        symptoms: symptomsObject,
+        detection_result: prediction,
+      });
+    } catch (error) {
+      console.error("Error saving to history:", error);
+      // Don't show error to user since this is a background operation
+    }
+  };
+
   const handleDetectionSubmit = () => {
     if (selectedSymptoms.length === 0) {
       setError("Silakan pilih minimal satu gejala");
@@ -120,12 +141,21 @@ const DetectionForm = () => {
       .then((data) => {
         setIsLoading(false);
         if (data.success) {
+          const prediction = data.prediction;
           setResult({
-            disease: data.prediction,
+            disease: prediction,
             description:
               "Berdasarkan gejala yang Anda masukkan, sistem mendeteksi kemungkinan penyakit berikut.",
           });
           setShowResult(true);
+
+          // Save to history if user is logged in
+          if (isLoggedIn) {
+            saveToHistory(
+              selectedSymptoms.map((s) => s.value),
+              prediction
+            );
+          }
         } else {
           setError(data.error || "Terjadi kesalahan saat memproses prediksi");
         }

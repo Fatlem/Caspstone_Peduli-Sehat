@@ -89,10 +89,64 @@ app.get("/logout", (req, res) => {
   return res.json({ Status: "Success" });
 });
 
+// Get user ID from token
+const getUserId = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.json({ Error: "You are not authenticated" });
+  }
+
+  jwt.verify(token, "jwt-secret-key", (err, decoded) => {
+    if (err) {
+      return res.json({ Error: "Token is not ok" });
+    }
+
+    // Get user ID from database using decoded name
+    const sql = "SELECT id FROM login WHERE name = ?";
+    db.query(sql, [decoded.name], (err, result) => {
+      if (err) return res.json({ Error: "Database error" });
+      if (result.length === 0) return res.json({ Error: "User not found" });
+
+      req.userId = result[0].id;
+      next();
+    });
+  });
+};
+
+// Save detection history
+app.post("/save-detection", getUserId, (req, res) => {
+  const { symptoms, detection_result } = req.body;
+  const sql =
+    "INSERT INTO detection_history (user_id, symptoms, detection_result) VALUES (?, ?, ?)";
+
+  db.query(
+    sql,
+    [req.userId, JSON.stringify(symptoms), detection_result],
+    (err, result) => {
+      if (err) return res.json({ Error: "Error saving detection history" });
+      return res.json({ Status: "Success", id: result.insertId });
+    }
+  );
+});
+
+// Get user's detection history
+app.get("/detection-history", getUserId, (req, res) => {
+  const sql =
+    "SELECT * FROM detection_history WHERE user_id = ? ORDER BY created_at DESC";
+
+  db.query(sql, [req.userId], (err, result) => {
+    if (err) return res.json({ Error: "Error fetching detection history" });
+
+    // Parse symptoms JSON string back to object
+    const history = result.map((record) => ({
+      ...record,
+      symptoms: JSON.parse(record.symptoms),
+    }));
+
+    return res.json({ Status: "Success", history });
+  });
+});
+
 app.listen(8081, () => {
   console.log("Sudah Running yaa...");
 });
-
-
-
-

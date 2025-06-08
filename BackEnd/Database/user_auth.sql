@@ -27,11 +27,14 @@ SET time_zone = "+00:00";
 -- Table structure for table `login`
 --
 
+DROP TABLE IF EXISTS `login`;
 CREATE TABLE `login` (
-  `id` int(50) UNSIGNED NOT NULL,
+  `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `password` varchar(100) NOT NULL
+  `password` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -56,25 +59,26 @@ INSERT INTO `login` (`id`, `name`, `email`, `password`) VALUES
 (26, 'Ronaldo', 'ronaldo2@gmail.com', '$2b$10$WO7aFhhl.36R.sf9NdG83uHLGlHDITBQIadxgtmUchV7ASFv1yYyG');
 
 --
--- Indexes for dumped tables
+-- Table structure for table `detection_history`
 --
 
---
--- Indexes for table `login`
---
-ALTER TABLE `login`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- AUTO_INCREMENT for dumped tables
---
+DROP TABLE IF EXISTS `detection_history`;
+CREATE TABLE `detection_history` (
+  `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(50) UNSIGNED NOT NULL,
+  `symptoms` TEXT NOT NULL,
+  `detection_result` varchar(255) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `detection_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `login` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- AUTO_INCREMENT for table `login`
 --
-ALTER TABLE `login`
-  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+ALTER TABLE `login` MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
