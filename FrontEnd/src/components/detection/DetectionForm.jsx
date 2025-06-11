@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import Select from "react-select";
 import axios from "axios";
-import diseaseData from "../../data/diseaseData";
 
 const SymptomTag = ({ text, onRemove }) => {
   return (
@@ -19,11 +18,6 @@ const SymptomTag = ({ text, onRemove }) => {
 };
 
 const ResultSection = ({ result, onClose }) => {
-  const diseaseInfo = diseaseData[result.disease.toLowerCase()] || {
-    description: "Informasi penyakit tidak tersedia.",
-    recommendation: "Silakan konsultasikan dengan dokter untuk informasi lebih lanjut."
-  };
-
   return (
     <div className="mt-8 bg-white rounded-lg p-5 shadow-default relative">
       <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-300">
@@ -58,19 +52,10 @@ const ResultSection = ({ result, onClose }) => {
       </div>
 
       <div className="mb-5">
-        <h5 className="text-2xl font-extrabold text-primary-dark mb-4 text-center uppercase tracking-wide">
+        <h5 className="text-lg text-gray-800 mb-2">
           Hasil Deteksi : {result.disease}
         </h5>
-        <div className="space-y-6">
-          <div>
-            <h6 className="font-bold text-lg text-green-700 mb-2 border-b-2 border-green-200 pb-1">Penjelasan Penyakit :</h6>
-            <p className="text-gray-600 leading-relaxed text-justify">{diseaseInfo.description}</p>
-          </div>
-          <div>
-            <h6 className="font-bold text-lg text-green-700 mb-2 border-b-2 border-green-200 pb-1">Saran Penanganan :</h6>
-            <p className="text-gray-600 leading-relaxed text-justify">{diseaseInfo.recommendation}</p>
-          </div>
-        </div>
+        <p className="text-gray-600 leading-relaxed">{result.description}</p>
       </div>
 
       <p className="text-xs text-gray-500 italic mt-4 text-center">
