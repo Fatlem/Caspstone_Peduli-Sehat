@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import Select from "react-select";
-import axios from "axios";
+import api from "../../services/api";
 import diseaseData from "../../data/diseaseData";
 
 const SymptomTag = ({ text, onRemove }) => {
@@ -19,7 +19,9 @@ const SymptomTag = ({ text, onRemove }) => {
 };
 
 const ResultSection = ({ result, onClose }) => {
-  const diseaseInfo = diseaseData[result.disease.toLowerCase()] || {
+  // Get prediction from result and convert to lowercase for lookup
+  const prediction = (result.prediction || "").toLowerCase();
+  const diseaseInfo = diseaseData[prediction] || {
     description: "Informasi penyakit tidak tersedia.",
     recommendation:
       "Silakan konsultasikan dengan dokter untuk informasi lebih lanjut.",
@@ -60,7 +62,7 @@ const ResultSection = ({ result, onClose }) => {
 
       <div className="mb-5">
         <h5 className="text-2xl font-extrabold text-primary-dark mb-4 text-center uppercase tracking-wide">
-          Hasil Deteksi : {result.disease}
+          Hasil Deteksi : {result.prediction}
         </h5>
         <div className="space-y-6">
           <div>
@@ -100,9 +102,10 @@ const DetectionForm = ({ isLoggedIn }) => {
 
   useEffect(() => {
     // Fetch symptoms from ML server when component mounts
-    fetch("http://localhost:3000/symptoms")
-      .then((response) => response.json())
-      .then((data) => {
+    api
+      .get("/symptoms")
+      .then((response) => {
+        const data = response.data || response;
         if (data.success) {
           const formattedSymptoms = data.symptoms.map((symptom) => ({
             value: symptom,
@@ -122,90 +125,57 @@ const DetectionForm = ({ isLoggedIn }) => {
       });
   }, []);
 
-  const saveToHistory = async (symptoms, prediction) => {
-    if (!isLoggedIn) return;
-
-    try {
-      // Convert symptoms array to object with boolean values
-      const symptomsObject = symptoms.reduce((acc, symptom) => {
-        acc[symptom] = true;
-        return acc;
-      }, {});
-
-      await axios.post("http://localhost:8081/save-detection", {
-        symptoms: symptomsObject,
-        detection_result: prediction,
-      });
-    } catch (error) {
-      console.error("Error saving to history:", error);
-      // Don't show error to user since this is a background operation
-    }
-  };
-
-  const handleDetectionSubmit = () => {
+  const handleDetectionSubmit = async () => {
     if (selectedSymptoms.length === 0) {
-      setError("Silakan pilih minimal satu gejala");
+      setError("Pilih minimal satu gejala");
       return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    // Send prediction request to ML server
-    fetch("http://localhost:3000/predict", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        symptoms: selectedSymptoms.map((s) => s.value),
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setIsLoading(false);
-        if (data.success) {
-          const prediction = data.prediction;
-          // Normalize the disease name to match the diseaseData keys
-          const normalizedDiseaseName = prediction
-            .toLowerCase()
-            .replace(/[.]/g, "") // Remove dots
-            .replace(/\s+\([^)]+\)/g, "") // Remove parentheses and their contents
-            .replace(/\s+/g, " ") // Normalize spaces
-            .trim(); // Remove leading/trailing spaces
-
-          const diseaseInfo = diseaseData[normalizedDiseaseName] || {
-            description:
-              "Berdasarkan gejala yang Anda masukkan, sistem mendeteksi kemungkinan penyakit " +
-              prediction +
-              ". Silakan konsultasikan dengan dokter untuk informasi lebih detail.",
-            recommendation:
-              "Segera konsultasikan dengan dokter untuk pemeriksaan lebih lanjut. Catat semua gejala yang Anda alami. Ikuti saran dan pengobatan yang diberikan oleh dokter.",
-          };
-
-          setResult({
-            disease: prediction,
-            description: diseaseInfo.description,
-            recommendations: diseaseInfo.recommendation,
-          });
-          setShowResult(true);
-
-          // Save to history if user is logged in
-          if (isLoggedIn) {
-            saveToHistory(
-              selectedSymptoms.map((s) => s.value),
-              prediction
-            );
-          }
-        } else {
-          setError(data.error || "Terjadi kesalahan saat memproses prediksi");
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        setIsLoading(false);
-        setError("Terjadi kesalahan saat menghubungi server");
+    try {
+      const symptoms = selectedSymptoms.map((s) => s.value);
+      const response = await api.post("/predict", {
+        symptoms: symptoms,
       });
+
+      const data = response.data || response;
+      console.log("Prediction response:", data); // Debug log
+
+      if (data.success) {
+        setResult(data);
+        setShowResult(true);
+        if (isLoggedIn) {
+          await saveToHistory(symptoms, data.prediction);
+        }
+      } else {
+        setError(data.error || "Terjadi kesalahan saat memproses prediksi");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Terjadi kesalahan saat menghubungi server");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveToHistory = async (symptoms, prediction) => {
+    if (!isLoggedIn) return;
+
+    try {
+      const symptomsObject = symptoms.reduce((acc, symptom) => {
+        acc[symptom] = true;
+        return acc;
+      }, {});
+
+      await api.post("/save-detection", {
+        symptoms: symptomsObject,
+        detection_result: prediction,
+      });
+    } catch (error) {
+      console.error("Error saving to history:", error);
+    }
   };
 
   return (

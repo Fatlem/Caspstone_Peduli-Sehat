@@ -1,59 +1,43 @@
-import axios from 'axios'
+import axios from "axios";
 
 // Base URL untuk API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081'
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 // Membuat instance axios dengan konfigurasi default
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  withCredentials: true // Enable sending cookies
-})
+});
 
-// Interceptor untuk handling token (jika diperlukan)
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Interceptor untuk handling response
+// Interceptor untuk response
 api.interceptors.response.use(
   (response) => {
-    return response.data
+    // Return the actual data from the response
+    return response.data;
   },
   (error) => {
-    // Handle errors
+    // Handle error response
     if (error.response) {
-      // Server merespon dengan status error
-      console.error('Response Error:', error.response.data)
-      
-      // Handle unauthorized error (401)
-      if (error.response.status === 401) {
-        // Redirect to login if needed
-        window.location.href = '/login'
-      }
-      
-      return Promise.reject(error.response.data)
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      return Promise.reject(error.response.data);
     } else if (error.request) {
-      // Request dibuat tetapi tidak ada response
-      console.error('Request Error:', error.request)
-      return Promise.reject({ message: 'Tidak dapat terhubung ke server' })
+      // The request was made but no response was received
+      return Promise.reject({
+        success: false,
+        error: "Tidak ada respons dari server",
+      });
     } else {
-      // Error dalam membuat request
-      console.error('Error:', error.message)
-      return Promise.reject({ message: error.message })
+      // Something happened in setting up the request that triggered an Error
+      return Promise.reject({
+        success: false,
+        error: "Terjadi kesalahan saat mengirim permintaan",
+      });
     }
   }
-)
+);
 
-export default api
+export default api;

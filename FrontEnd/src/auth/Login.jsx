@@ -20,7 +20,7 @@ function Login({ setIsLoggedIn }) {
     setErrors({ email: "", password: "" }); // Clear previous errors
 
     axios
-      .post("http://localhost:8081/login", values)
+      .post("https://api2-production-1bf5.up.railway.app/login", values)
       .then((res) => {
         if (res.data.Status === "Success") {
           setIsLoggedIn(true);

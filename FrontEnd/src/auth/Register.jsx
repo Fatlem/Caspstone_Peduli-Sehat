@@ -39,7 +39,7 @@ function Register() {
     }
 
     axios
-      .post("http://localhost:8081/register", values)
+      .post("https://api2-production-1bf5.up.railway.app/register", values)
       .then((res) => {
         if (res.data.Status === "Success") {
           navigate("/login");
